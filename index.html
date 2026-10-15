@@ -1,16 +1,101 @@
-
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Countries API</title>
-   <link rel="stylesheet" href="./styles.css" />
+  <title>Flashcards Study App</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
 </head>
 <body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="app-name" href="#" aria-label="Flashcards Study App home">Flashcards</a>
+      <button class="primary-button" type="submit" form="create-deck-form">+ New Deck</button>
+    </header>
 
-  <h1>Flash Cards</h1>
+    <aside class="sidebar" aria-labelledby="decks-heading">
+      <h2 id="decks-heading">Your decks</h2>
 
-  <script src="app.js"></script>
+      <form id="create-deck-form" class="deck-form">
+        <label for="new-deck-name">New deck name</label>
+        <input id="new-deck-name" name="deckName" type="text" placeholder="e.g. Biology" required>
+      </form>
+
+      <label class="visually-hidden" for="deck-select">Select a deck</label>
+      <select id="deck-select" name="selectedDeck">
+        <option value="">Choose a deck</option>
+      </select>
+
+      <ul id="deck-list" class="deck-list" aria-label="Decks"></ul>
+
+      <details class="deck-settings">
+        <summary>Deck settings</summary>
+        <form id="rename-deck-form">
+          <label for="renamed-deck-name">Rename selected deck</label>
+          <input id="renamed-deck-name" name="renamedDeckName" type="text" required>
+          <button type="submit">Rename deck</button>
+        </form>
+        <button id="delete-deck-button" type="button" class="text-button">Delete selected deck</button>
+      </details>
+    </aside>
+
+    <main class="main-content">
+      <section class="study-section" aria-labelledby="deck-title">
+        <div class="deck-heading">
+          <div>
+            <p class="eyebrow">Currently studying</p>
+            <h1 id="deck-title">Select a deck</h1>
+          </div>
+          <span class="card-count" aria-label="Cards in deck">Flashcards</span>
+        </div>
+
+        <div class="toolbar">
+          <label class="search-box" for="flashcard-search">
+            <span aria-hidden="true">⌕</span>
+            <input id="flashcard-search" name="search" type="search" placeholder="Search flashcards">
+          </label>
+          <button id="shuffle-cards-button" type="button">Shuffle</button>
+          <button id="new-card-button" type="button" class="primary-button">+ New Card</button>
+        </div>
+
+        <ul id="search-results" class="search-results" aria-label="Search results"></ul>
+
+        <article id="study-card" class="study-card" aria-live="polite">
+          <div class="card-face card-front">
+            <span class="face-label">Question</span>
+            <p id="study-card-content">Select a deck to begin studying.</p>
+          </div>
+          <div class="card-face card-back">
+            <span class="face-label">Answer</span>
+            <p id="study-card-answer">Flip the card to reveal the answer.</p>
+          </div>
+        </article>
+
+        <div class="study-controls" aria-label="Study controls">
+          <button id="previous-card-button" type="button" aria-label="Previous card">← Previous</button>
+          <button id="flip-card-button" type="button" class="flip-button">Flip card</button>
+          <button id="next-card-button" type="button" aria-label="Next card">Next →</button>
+        </div>
+
+        <ul id="flashcard-list" class="flashcard-list" aria-label="Flashcards in selected deck"></ul>
+      </section>
+
+      <details class="card-editor">
+        <summary>Add or edit a flashcard</summary>
+        <form id="flashcard-form">
+          <label for="card-question">Question</label>
+          <textarea id="card-question" name="question" required></textarea>
+          <label for="card-answer">Answer</label>
+          <textarea id="card-answer" name="answer" required></textarea>
+          <button type="submit" class="primary-button">Save flashcard</button>
+        </form>
+      </details>
+    </main>
+
+    <footer class="app-footer">
+      Choose a deck, then use the controls to move through your cards. Select “Flip card” to reveal an answer.
+    </footer>
+  </div>
 </body>
 </html>
