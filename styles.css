@@ -1,3 +1,4 @@
+
 :root {
   color-scheme: light dark;
   font-family: Inter, "Segoe UI", sans-serif;
@@ -5,6 +6,7 @@
   color: #20243a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
   --surface: #fff;
   --surface-muted: #f0f1f7;
   --text-muted: #686d83;
@@ -14,6 +16,7 @@
   --focus: #a5a0ff;
 }
 
+/* General styles */
 * {
   box-sizing: border-box;
 }
@@ -65,6 +68,7 @@ button:hover {
   background: var(--accent-hover);
 }
 
+/* Keyboard accessibility */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -75,6 +79,7 @@ summary:focus-visible {
   outline-offset: 3px;
 }
 
+/* Form controls */
 input,
 select,
 textarea {
@@ -99,6 +104,7 @@ label {
   font-weight: 600;
 }
 
+/* Main application layout */
 .app-shell {
   display: grid;
   grid-template:
@@ -109,6 +115,7 @@ label {
   min-height: 100vh;
 }
 
+/* Header */
 .app-header {
   grid-area: header;
   display: flex;
@@ -126,6 +133,7 @@ label {
   letter-spacing: -0.03em;
 }
 
+/* Sidebar */
 .sidebar {
   grid-area: sidebar;
   padding: 1.5rem 1rem;
@@ -177,6 +185,7 @@ label {
   font-weight: 700;
 }
 
+/* Deck settings */
 .deck-settings {
   margin-top: 1.5rem;
   padding-top: 1rem;
@@ -205,6 +214,7 @@ label {
   color: #b42335;
 }
 
+/* Main content */
 .main-content {
   grid-area: main;
   width: min(100%, 1100px);
@@ -243,6 +253,7 @@ label {
   font-size: 0.9rem;
 }
 
+/* Search and action buttons */
 .toolbar {
   display: flex;
   align-items: center;
@@ -269,46 +280,63 @@ label {
   outline: 0;
 }
 
+/* Flashcard 3D container */
 .study-card {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   min-height: 300px;
-  overflow: hidden;
+  perspective: 1000px;
+  overflow: visible;
+}
+
+/* Inner element that rotates */
+.study-card-inner {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+}
+
+/* Rotate the card when JavaScript adds .flipped */
+.study-card.flipped .study-card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Front and back faces */
+.card-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 300px;
+  padding: clamp(1.5rem, 5vw, 3.5rem);
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: var(--surface);
   box-shadow: 0 12px 32px rgb(24 29 56 / 7%);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow-wrap: anywhere;
 }
 
-.card-face {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(1.5rem, 5vw, 3.5rem);
-}
-
+/* Question side */
 .card-front {
-  border-right: 1px solid var(--border);
+  transform: rotateY(0deg);
 }
 
+/* Answer side */
+.card-back {
+  transform: rotateY(180deg);
+}
+
+/* Flashcard text */
 .card-face p {
   margin: 1rem 0 0;
   font-size: clamp(1.2rem, 2.5vw, 1.7rem);
   line-height: 1.5;
 }
 
-.study-card.flipped .card-front {
-  display: none;
-}
-
-.study-card.flipped {
-  grid-template-columns: 1fr;
-}
-
-.study-card:not(.flipped) .card-back {
-  display: none;
-}
-
+/* Study navigation */
 .study-controls {
   display: flex;
   justify-content: center;
@@ -324,6 +352,7 @@ label {
   font-weight: 700;
 }
 
+/* Add and edit flashcards */
 .card-editor {
   margin-top: 2rem;
   padding: 1rem;
@@ -338,6 +367,7 @@ label {
   margin-top: 1rem;
 }
 
+/* Footer */
 .app-footer {
   grid-area: footer;
   padding: 1rem 1.5rem;
@@ -347,6 +377,7 @@ label {
   text-align: center;
 }
 
+/* Screen-reader-only content */
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -357,6 +388,7 @@ label {
   clip-path: inset(50%);
 }
 
+/* Tablet and smaller screens */
 @media (max-width: 760px) {
   .app-shell {
     grid-template:
@@ -396,11 +428,14 @@ label {
     padding-top: 1.5rem;
   }
 
-  .study-card {
+  .study-card,
+  .study-card-inner,
+  .card-face {
     min-height: 250px;
   }
 }
 
+/* Mobile screens */
 @media (max-width: 520px) {
   .toolbar {
     flex-wrap: wrap;
@@ -415,13 +450,10 @@ label {
     flex: 1;
   }
 
-  .study-card {
-    grid-template-columns: 1fr;
+  .study-card,
+  .study-card-inner,
+  .card-face {
     min-height: 220px;
-  }
-
-  .card-front {
-    border-right: 0;
   }
 
   .study-controls {
@@ -433,6 +465,14 @@ label {
   }
 }
 
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .study-card-inner {
+    transition: none;
+  }
+}
+
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
     background: #151622;
