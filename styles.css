@@ -297,15 +297,15 @@ label {
   line-height: 1.5;
 }
 
-.study-card.is-flipped .card-front {
+.study-card.flipped .card-front {
   display: none;
 }
 
-.study-card.is-flipped {
+.study-card.flipped {
   grid-template-columns: 1fr;
 }
 
-.study-card:not(.is-flipped) .card-back {
+.study-card:not(.flipped) .card-back {
   display: none;
 }
 
