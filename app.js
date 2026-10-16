@@ -1,16 +1,55 @@
-
+ 
+ 
  // ==========================================
  // Application Data and HTML Elements
  // ==========================================
 
-const decks = [];
-let selectedDeckId = null;
-let nextDeckId = 1;
-let nextCardId = 1;
+const initialState = loadState();
+
+function getNextNumericId(values) {
+  const largestId = values.reduce((largest, value) => {
+    const number = Number(value);
+
+    return Number.isSafeInteger(number) && number > largest
+      ? number
+      : largest;
+  }, 0);
+
+  return largestId + 1;
+}
+
+const decks = initialState.decks;
+
+const restoredDeck = decks.find(
+  (deck) => String(deck.id) === String(initialState.activeDeckId)
+);
+
+let selectedDeckId = restoredDeck?.id ?? decks[0]?.id ?? null;
+
+let nextDeckId = getNextNumericId(
+  decks.map((deck) => deck.id)
+);
+
+let nextCardId = getNextNumericId(
+  decks.flatMap((deck) =>
+    deck.flashcards.map((card) => card.cardId)
+  )
+);
+
 let studyOrder = [];
 let currentStudyCardId = null;
 let isCardFlipped = false;
 let editingCardId = null;
+let searchDebounceTimer = null;
+
+function persistState() {
+  const saved = saveState({
+    decks,
+    activeDeckId: selectedDeckId,
+  });
+
+ console.log("update", saved); 
+}
 
 const createForm = document.getElementById("create-deck-form");
 const newDeckNameInput = document.getElementById("new-deck-name");
@@ -28,7 +67,9 @@ const cardAnswerInput = document.getElementById("card-answer");
 const flashcardList = document.getElementById("flashcard-list");
 const cardCount = document.querySelector(".card-count");
 const cardEditor = document.querySelector(".card-editor");
-const saveCardButton = flashcardForm.querySelector('button[type="submit"]');
+const saveCardButton = flashcardForm.querySelector(
+  'button[type="submit"]'
+);
 
 const flashcardSearch = document.getElementById("flashcard-search");
 const searchResults = document.getElementById("search-results");
@@ -72,6 +113,8 @@ function createDeck(event) {
   selectedDeckId = deck.id;
   newDeckNameInput.value = "";
 
+  persistState();
+
   resetDeckView(deck);
   renderDecks();
   renderDeckContent();
@@ -98,6 +141,7 @@ function renameDeck(event) {
   deck.name = name;
   renamedDeckNameInput.value = "";
 
+  persistState();
   renderDecks();
 }
 
@@ -117,6 +161,8 @@ function deleteDeck() {
   decks.splice(index, 1);
 
   selectedDeckId = null;
+
+  persistState();
 
   resetDeckView(null);
   resetFlashcardForm();
@@ -162,7 +208,13 @@ function renderDecks() {
 }
 
 function selectDeck(deckId) {
-  selectedDeckId = deckId || null;
+  const deck = decks.find(
+    (item) => String(item.id) === String(deckId)
+  );
+
+  selectedDeckId = deck?.id ?? null;
+
+  persistState();
 
   resetFlashcardForm();
   resetDeckView(getSelectedDeck());
@@ -171,6 +223,9 @@ function selectDeck(deckId) {
 }
 
 function resetDeckView(deck) {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = null;
+
   flashcardSearch.value = "";
   searchResults.replaceChildren();
 
@@ -210,10 +265,18 @@ function saveFlashcard(event) {
       (item) => item.cardId === editingCardId
     );
 
-    if (card) {
-      card.question = question;
-      card.answer = answer;
+    if (!card) {
+      alert("Flashcard not found.");
+      resetFlashcardForm();
+      return;
     }
+
+    card.question = question;
+    card.answer = answer;
+
+    studyOrder = studyOrder.map((item) =>
+      item.cardId === card.cardId ? card : item
+    );
   } else {
     const card = {
       cardId: nextCardId++,
@@ -226,6 +289,8 @@ function saveFlashcard(event) {
     currentStudyCardId = card.cardId;
     isCardFlipped = false;
   }
+
+  persistState();
 
   resetFlashcardForm();
   renderDeckContent();
@@ -283,8 +348,35 @@ function deleteFlashcard(cardId) {
     resetFlashcardForm();
   }
 
+  persistState();
+
   renderDeckContent();
   renderSearchResults();
+}
+
+
+// ==========================================
+// Search and Filtering
+// ==========================================
+
+function getVisibleFlashcards() {
+  const deck = getSelectedDeck();
+
+  if (!deck) {
+    return [];
+  }
+
+  const query = flashcardSearch.value.trim().toLowerCase();
+
+  if (!query) {
+    return deck.flashcards;
+  }
+
+  return deck.flashcards.filter(
+    (card) =>
+      card.question.toLowerCase().includes(query) ||
+      card.answer.toLowerCase().includes(query)
+  );
 }
 
 function renderFlashcards() {
@@ -294,15 +386,25 @@ function renderFlashcards() {
 
   if (!deck) {
     flashcardList.textContent = "Select a deck to view flashcards.";
+    cardCount.textContent = "0 flashcards";
     return;
   }
 
-  if (deck.flashcards.length === 0) {
-    flashcardList.textContent = "This deck has no flashcards yet.";
+  const query = flashcardSearch.value.trim();
+  const cards = getVisibleFlashcards();
+
+  cardCount.textContent = query
+    ? `${cards.length} matching ${cards.length === 1 ? "card" : "cards"}`
+    : `${cards.length} ${cards.length === 1 ? "flashcard" : "flashcards"}`;
+
+  if (cards.length === 0) {
+    flashcardList.textContent = query
+      ? "No matching flashcards."
+      : "This deck has no flashcards yet.";
     return;
   }
 
-  deck.flashcards.forEach((card) => {
+  cards.forEach((card) => {
     const item = document.createElement("li");
     const question = document.createElement("p");
     const answer = document.createElement("p");
@@ -329,19 +431,20 @@ function renderFlashcards() {
   });
 }
 
-
-// ==========================================
-// Search
-// ==========================================
-
 function searchFlashcards() {
-  renderSearchResults();
+  clearTimeout(searchDebounceTimer);
+
+  searchDebounceTimer = setTimeout(() => {
+    renderFlashcards();
+    renderSearchResults();
+    searchDebounceTimer = null;
+  }, 300);
 }
 
 function renderSearchResults() {
   searchResults.replaceChildren();
 
-  const query = flashcardSearch.value.trim().toLowerCase();
+  const query = flashcardSearch.value.trim();
 
   if (!query) {
     return;
@@ -354,19 +457,14 @@ function renderSearchResults() {
     return;
   }
 
-  if (deck.flashcards.length === 0) {
-    showSearchMessage("This deck has no flashcards yet.");
-    return;
-  }
-
-  const matches = deck.flashcards.filter(
-    (card) =>
-      card.question.toLowerCase().includes(query) ||
-      card.answer.toLowerCase().includes(query)
-  );
+  const matches = getVisibleFlashcards();
 
   if (matches.length === 0) {
-    showSearchMessage("No matching flashcards.");
+    showSearchMessage(
+      deck.flashcards.length === 0
+        ? "This deck has no flashcards yet."
+        : "No matching flashcards."
+    );
     return;
   }
 
@@ -481,7 +579,7 @@ function shuffleFlashcards() {
     return;
   }
 
-  // Shuffle a copy so the deck's original card order stays unchanged.
+  // Shuffle a copy; do not change the original deck order.
   studyOrder = deck.flashcards.slice();
 
   for (let index = studyOrder.length - 1; index > 0; index--) {
@@ -497,12 +595,6 @@ function shuffleFlashcards() {
 }
 
 function renderStudyMode() {
-  const deck = getSelectedDeck();
-  const count = deck ? deck.flashcards.length : 0;
-
-  cardCount.textContent =
-    `${count} ${count === 1 ? "flashcard" : "flashcards"}`;
-
   renderStudyCard();
 }
 
@@ -530,9 +622,11 @@ function initializeApp() {
   shuffleButton.addEventListener("click", shuffleFlashcards);
 
   flipCardButton.addEventListener("click", flipStudyCard);
+
   previousCardButton.addEventListener("click", () => {
     moveStudyCard(-1);
   });
+
   nextCardButton.addEventListener("click", () => {
     moveStudyCard(1);
   });
